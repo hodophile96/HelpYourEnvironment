@@ -4,7 +4,7 @@ import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { addDoc, collection } from 'firebase/firestore';
-import { db } from './firebase'; // Import your Firebase configuration here
+import { db, auth } from './firebase'; // Import your Firebase configuration here
 
 export default function EventDescription({ navigation }) {
   const [eventType, setEventType] = useState('');
@@ -17,16 +17,25 @@ export default function EventDescription({ navigation }) {
 
   const handlePost = async () => {
     try {
+      // Get the currently signed-in user
+      const currentUser = auth.currentUser;
+
+      if (!currentUser) {
+        console.error('No user is signed in.');
+        return;
+      }
+
       // Create a reference to the Firestore collection (e.g., 'events')
       const eventsCollectionRef = collection(db, 'events');
 
-      // Add a new document to the collection with the event details
+      // Add a new document to the collection with the event details and user UID
       await addDoc(eventsCollectionRef, {
         eventType,
         date,
         time,
         description,
         location,
+        createdBy: currentUser.uid, // Store the user's UID
       });
 
       // Clear input fields
