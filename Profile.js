@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, TextInput, FlatList, StyleSheet, Alert } from 'react-native';
 import ImagePicker from 'react-native-image-picker';
 import { collection, getDocs, doc, deleteDoc } from 'firebase/firestore';
-import { db } from './firebase';
+import { auth, db } from './firebase'; // Import your Firebase auth and Firestore instances
 
-export default function Profile() {
+export default function Profile({ navigation }) {
   const [profileImage, setProfileImage] = useState(null);
   const [bio, setBio] = useState('Enter your bio here');
   const [events, setEvents] = useState([]);
@@ -27,6 +27,7 @@ export default function Profile() {
           time: data.time, // Use as is or format as needed
           description: data.description,
           location: data.location,
+          createdBy: data.createdBy, // Add createdBy field
         };
       });
       setEvents(eventsData);
@@ -69,8 +70,21 @@ export default function Profile() {
     );
   };
 
+  const handleSignOut = async () => {
+    try {
+      await auth.signOut();
+      // After signing out, navigate to the SignIn page or any other desired page.
+      navigation.navigate('SignIn');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+        <Text style={styles.signOutButtonText}>Sign Out</Text>
+      </TouchableOpacity>
       <View style={styles.profileContainer}>
         <TouchableOpacity onPress={selectProfileImage}>
           <View style={styles.profileImageContainer}>
@@ -87,13 +101,11 @@ export default function Profile() {
           onChangeText={setBio}
         />
       </View>
-
-      <View style={styles.separator} />
       
       <Text style={styles.eventHeader}>Here is the list of events created by you</Text>
 
       <FlatList
-        data={events}
+        data={events.filter((event) => event.createdBy === auth.currentUser.uid)}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.eventCard}>
@@ -116,10 +128,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  signOutButton: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    padding: 8,
+  },
+  signOutButtonText: {
+    color: 'blue',
+    fontSize: 16,
+  },
   profileContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    marginTop: 20, // Updated marginTop to create space
+    marginLeft: 16,
   },
   profileImageContainer: {
     width: 100,
@@ -139,10 +162,6 @@ const styles = StyleSheet.create({
   bioInput: {
     flex: 1,
     marginLeft: 16,
-  },
-  separator: {
-    borderBottomWidth: 1,
-    borderBottomColor: 'lightgray',
   },
   eventHeader: {
     fontSize: 16,
