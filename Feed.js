@@ -1,10 +1,38 @@
-import React from 'react';
-import { View, Text, FlatList, Button, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from './firebase'; // Import your Firebase configuration here
 
 export default function Feed() {
   const navigation = useNavigation();
+  const [events, setEvents] = useState([]);
+
+  const fetchEvents = async () => {
+    try {
+      const eventsCollection = collection(db, 'events');
+      const eventsSnapshot = await getDocs(eventsCollection);
+      const eventsData = eventsSnapshot.docs.map((doc) => {
+        const data = doc.data();
+        // Assuming data.time is a string, you can use it as is or format it as needed
+        return {
+          id: doc.id,
+          eventType: data.eventType,
+          location: data.location,
+          time: data.time, // Use as is or format as needed
+          description: data.description,
+        };
+      });
+      setEvents(eventsData);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchEvents();
+  }, []);
 
   const handleLike = (postIndex) => {
     // Handle liking a post (e.g., update likes in the database)
@@ -44,16 +72,20 @@ export default function Feed() {
 
       {/* Post List */}
       <FlatList
-        data={[] /* Your posts data here */}
+        data={events}
         keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item, index }) => (
-          <View>
-            <Text>Event Type: {item.eventType}</Text>
-            <Text>Location: {item.location}</Text>
-            <Text>Time: {item.time}</Text>
-            <Text>Description: {item.description}</Text>
-            <Button title="Like" onPress={() => handleLike(index)} />
-            <Button title="Join" onPress={() => handleJoin(index)} />
+        renderItem={({ item }) => (
+          <View style={styles.eventContainer}>
+            <Text style={styles.eventType}>Event Type: {item.eventType}</Text>
+            <Text style={styles.location}>Location: {item.location}</Text>
+            <Text style={styles.time}>Time: {item.time}</Text>
+            <Text style={styles.description}>Description: {item.description}</Text>
+            <TouchableOpacity style={styles.likeButton} onPress={() => handleLike(item.id)}>
+              <Text style={styles.likeButtonText}>Like</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.joinButton} onPress={() => handleJoin(item.id)}>
+              <Text style={styles.joinButtonText}>Join</Text>
+            </TouchableOpacity>
           </View>
         )}
       />
@@ -95,6 +127,48 @@ const styles = StyleSheet.create({
   },
   postButtonText: {
     color: 'white',
+    fontSize: 16,
+  },
+  eventContainer: {
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'lightgray',
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  eventType: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  location: {
+    fontSize: 14,
+  },
+  time: {
+    fontSize: 14,
+  },
+  description: {
+    fontSize: 14,
+  },
+  likeButton: {
+    backgroundColor: 'lightblue',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    marginTop: 8,
+  },
+  likeButtonText: {
+    color: 'black',
+    fontSize: 16,
+  },
+  joinButton: {
+    backgroundColor: 'lightgreen',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    marginTop: 8,
+  },
+  joinButtonText: {
+    color: 'black',
     fontSize: 16,
   },
 });
