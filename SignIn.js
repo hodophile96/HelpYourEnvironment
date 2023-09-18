@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore'; // Import Firestore functions
+
+import { db } from './firebase'; // Import your Firebase configuration and Firestore instance
 
 export default function SignIn({ navigation }) {
   const [email, setEmail] = useState('');

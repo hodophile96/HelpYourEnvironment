@@ -5,7 +5,9 @@ import SignIn from './SignIn';
 import Feed from './Feed';
 import EventDescription from './EventDescription';
 import Profile from './Profile';
-import SignUp from './SignUp'; // Import the SignUp component
+import SignUp from './SignUp';
+import ContactListScreen from './ContactListScreen';
+import ChatScreen from './ChatScreen';
 
 const Stack = createStackNavigator();
 
@@ -22,7 +24,7 @@ export default function App() {
         />
         <Stack.Screen
           name="SignUp"
-          component={SignUp} // Add SignUp as a component
+          component={SignUp}
           options={{
             title: 'Sign Up',
           }}
@@ -48,6 +50,21 @@ export default function App() {
           options={{
             title: 'Profile',
           }}
+        />
+        {/* Add the ContactListScreen and ChatScreen components to the navigator */}
+        <Stack.Screen
+          name="ContactListScreen"
+          component={ContactListScreen}
+          options={{
+            title: 'Contacts',
+          }}
+        />
+        <Stack.Screen
+          name="ChatScreen"
+          component={ChatScreen}
+          options={({ route }) => ({
+            title: route.params.selectedUser.displayName, // Set the chat user's name as the title
+          })}
         />
       </Stack.Navigator>
     </NavigationContainer>

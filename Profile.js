@@ -1,16 +1,48 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, TextInput, FlatList, StyleSheet, Alert } from 'react-native';
 import ImagePicker from 'react-native-image-picker';
-import { collection, getDocs, doc, deleteDoc } from 'firebase/firestore';
-import { auth, db } from './firebase'; // Import your Firebase auth and Firestore instances
+import { collection, getDocs, doc, deleteDoc, updateDoc, arrayRemove, arrayUnion, getDoc, setDoc } from 'firebase/firestore';
+import { auth, db, storage } from './firebase'; // Import your Firebase auth and Firestore instances
+import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome'; // Import the FontAwesome icon component
 
 export default function Profile({ navigation }) {
   const [profileImage, setProfileImage] = useState(null);
-  const [bio, setBio] = useState('Enter your bio here');
+  const [bio, setBio] = useState('');
   const [events, setEvents] = useState([]);
 
+  // Function to select a profile image from the gallery
   const selectProfileImage = () => {
-    // (Same as in your previous code)
+    const options = {
+      title: 'Select Profile Image',
+      storageOptions: {
+        skipBackup: true,
+        path: 'images',
+      },
+    };
+
+    ImagePicker.showImagePicker(options, (response) => {
+      if (response.uri) {
+        setProfileImage({ uri: response.uri });
+      }
+    });
+  };
+
+  const fetchBio = async () => {
+    try {
+      const user = auth.currentUser;
+
+      if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setBio(userData.bio || '');
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching bio:', error);
+    }
   };
 
   const fetchEvents = async () => {
@@ -19,15 +51,14 @@ export default function Profile({ navigation }) {
       const eventsSnapshot = await getDocs(eventsCollection);
       const eventsData = eventsSnapshot.docs.map((doc) => {
         const data = doc.data();
-        // Assuming data.time is a string, you can use it as is or format it as needed
         return {
           id: doc.id,
           eventType: data.eventType,
-          date: data.date.toDate(), // Convert Firestore Timestamp to JavaScript Date
-          time: data.time, // Use as is or format as needed
+          date: data.date.toDate(),
+          time: data.time,
           description: data.description,
           location: data.location,
-          createdBy: data.createdBy, // Add createdBy field
+          createdBy: data.createdBy,
         };
       });
       setEvents(eventsData);
@@ -37,6 +68,7 @@ export default function Profile({ navigation }) {
   };
 
   useEffect(() => {
+    fetchBio();
     fetchEvents();
   }, []);
 
@@ -44,7 +76,6 @@ export default function Profile({ navigation }) {
     try {
       const eventRef = doc(db, 'events', eventId);
       await deleteDoc(eventRef);
-      // After deleting, fetch and update the events list
       fetchEvents();
     } catch (error) {
       console.error('Error deleting event:', error);
@@ -70,10 +101,47 @@ export default function Profile({ navigation }) {
     );
   };
 
+  const handleSaveProfile = async () => {
+    try {
+      const user = auth.currentUser;
+
+      if (!user) {
+        console.error('No user is signed in.');
+        return;
+      }
+
+      // Update the bio in Firebase
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, { bio });
+
+      // If a new profile image is selected, update it in Firebase Storage
+      if (profileImage) {
+        const imageUrl = await uploadProfileImage(user.uid, profileImage);
+        // Update the profile image URL in Firestore
+        await updateDoc(userRef, { profileImageUrl: imageUrl });
+      }
+
+      console.log('Profile updated successfully');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    }
+  };
+
+  const uploadProfileImage = async (userId, image) => {
+    try {
+      const storageRef = storage.ref(`profile_images/${userId}`);
+      const response = await storageRef.putFile(image.uri);
+      const imageUrl = await storageRef.getDownloadURL();
+      return imageUrl;
+    } catch (error) {
+      console.error('Error uploading profile image:', error);
+      return null;
+    }
+  };
+
   const handleSignOut = async () => {
     try {
       await auth.signOut();
-      // After signing out, navigate to the SignIn page or any other desired page.
       navigation.navigate('SignIn');
     } catch (error) {
       console.error('Error signing out:', error);
@@ -91,7 +159,7 @@ export default function Profile({ navigation }) {
             {profileImage ? (
               <Image source={profileImage} style={styles.profileImage} />
             ) : (
-              <View style={styles.profileImagePlaceholder}></View>
+              <FontAwesomeIcon name="user-circle" size={100} color="gray" /> // Replace with your icon
             )}
           </View>
         </TouchableOpacity>
@@ -101,9 +169,10 @@ export default function Profile({ navigation }) {
           onChangeText={setBio}
         />
       </View>
-      
-      <Text style={styles.eventHeader}>Here is the list of events created by you</Text>
-
+      <TouchableOpacity style={styles.saveProfileButton} onPress={handleSaveProfile}>
+        <Text style={styles.saveProfileButtonText}>Save Profile</Text>
+      </TouchableOpacity>
+      <Text style={styles.eventHeader}>Events Created by You</Text>
       <FlatList
         data={events.filter((event) => event.createdBy === auth.currentUser.uid)}
         keyExtractor={(item) => item.id}
@@ -127,11 +196,12 @@ export default function Profile({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    padding: 16,
   },
   signOutButton: {
     position: 'absolute',
-    top: 0,
-    right: 0,
+    top: 16,
+    right: 16,
     padding: 8,
   },
   signOutButtonText: {
@@ -141,7 +211,7 @@ const styles = StyleSheet.create({
   profileContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20, // Updated marginTop to create space
+    marginTop: 20,
     marginLeft: 16,
   },
   profileImageContainer: {
@@ -149,25 +219,34 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     overflow: 'hidden',
+    marginRight: 16,
   },
   profileImage: {
     flex: 1,
     width: null,
     height: null,
   },
-  profileImagePlaceholder: {
-    flex: 1,
-    backgroundColor: 'gray',
-  },
   bioInput: {
     flex: 1,
-    marginLeft: 16,
+    fontSize: 16,
   },
-  eventHeader: {
+  saveProfileButton: {
+    backgroundColor: 'green',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignSelf: 'flex-end',
+    marginTop: 16,
+  },
+  saveProfileButtonText: {
+    color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  eventHeader: {
+    fontSize: 18,
+    fontWeight: 'bold',
     marginVertical: 16,
-    marginLeft: 16,
   },
   eventCard: {
     padding: 16,

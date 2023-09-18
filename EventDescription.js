@@ -15,7 +15,7 @@ export default function EventDescription({ navigation }) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
-  const handlePost = async () => {
+  const handleCreateEvent = async () => {
     try {
       // Get the currently signed-in user
       const currentUser = auth.currentUser;
@@ -36,6 +36,8 @@ export default function EventDescription({ navigation }) {
         description,
         location,
         createdBy: currentUser.uid, // Store the user's UID
+        join: 0, // Initialize join count to 0
+        like: 0, // Initialize like count to 0
       });
 
       // Clear input fields
@@ -43,10 +45,10 @@ export default function EventDescription({ navigation }) {
       setDescription('');
       setLocation('');
 
-      // Navigate to the Feed Page after posting
+      // Navigate to the Feed Page after creating the event
       navigation.navigate('Feed');
     } catch (error) {
-      console.error('Error posting event:', error);
+      console.error('Error creating event:', error);
     }
   };
 
@@ -69,19 +71,20 @@ export default function EventDescription({ navigation }) {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={32} color="blue" />
+          <Ionicons name="arrow-back" size={32} color="green" />
         </TouchableOpacity>
-        <Text style={styles.headerText}>Event Details</Text>
+        <Text style={styles.headerText}>Create Event</Text>
         <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-          <Ionicons name="person" size={32} color="blue" />
+          <Ionicons name="person" size={32} color="green" />
         </TouchableOpacity>
       </View>
 
       <View style={styles.inputContainer}>
-        <Text>Event Type:</Text>
+        <Text style={styles.label}>Event Type:</Text>
         <Picker
           selectedValue={eventType}
           onValueChange={(itemValue) => setEventType(itemValue)}
+          style={styles.picker}
         >
           <Picker.Item label="Select Event Type" value="" />
           <Picker.Item label="Litter Picking" value="Litter Picking" />
@@ -92,9 +95,9 @@ export default function EventDescription({ navigation }) {
       </View>
 
       <View style={styles.inputContainer}>
-        <Text>Date:</Text>
+        <Text style={styles.label}>Date:</Text>
         <TouchableOpacity onPress={() => setShowDatePicker(true)}>
-          <Text>{date.toDateString()}</Text>
+          <Text style={styles.dateText}>{date.toDateString()}</Text>
         </TouchableOpacity>
         {showDatePicker && (
           <DateTimePicker
@@ -107,9 +110,9 @@ export default function EventDescription({ navigation }) {
       </View>
 
       <View style={styles.inputContainer}>
-        <Text>Time:</Text>
+        <Text style={styles.label}>Time:</Text>
         <TouchableOpacity onPress={() => setShowTimePicker(true)}>
-          <Text>{time}</Text>
+          <Text style={styles.timeText}>{time}</Text>
         </TouchableOpacity>
         {showTimePicker && (
           <DateTimePicker
@@ -122,27 +125,29 @@ export default function EventDescription({ navigation }) {
       </View>
 
       <View style={styles.inputContainer}>
-        <Text>Description:</Text>
+        <Text style={styles.label}>Description:</Text>
         <TextInput
           placeholder="Enter event description (250 characters max)"
           value={description}
           onChangeText={(text) => setDescription(text)}
           multiline
           maxLength={250}
+          style={styles.descriptionInput}
         />
       </View>
 
       <View style={styles.inputContainer}>
-        <Text>Location:</Text>
+        <Text style={styles.label}>Location:</Text>
         <TextInput
           placeholder="Enter event location"
           value={location}
           onChangeText={(text) => setLocation(text)}
+          style={styles.locationInput}
         />
       </View>
 
-      <TouchableOpacity style={styles.postButton} onPress={handlePost}>
-        <Text style={[styles.postButtonText, { textTransform: 'uppercase', fontSize: 18 }]}>POST</Text>
+      <TouchableOpacity style={styles.createEventButton} onPress={handleCreateEvent}>
+        <Text style={styles.createEventButtonText}>Create Event</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -159,22 +164,59 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   headerText: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'center',
+    color: 'green',
   },
   inputContainer: {
     marginBottom: 20,
   },
-  postButton: {
-    backgroundColor: 'blue',
+  label: {
+    fontSize: 18,
+    marginBottom: 5,
+    color: '#333',
+  },
+  picker: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+  },
+  dateText: {
+    fontSize: 18,
+    color: '#333',
+    paddingVertical: 10,
+  },
+  timeText: {
+    fontSize: 18,
+    color: '#333',
+    paddingVertical: 10,
+  },
+  descriptionInput: {
+    fontSize: 16,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    height: 120,
+  },
+  locationInput: {
+    fontSize: 16,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+  },
+  createEventButton: {
+    backgroundColor: 'green',
     paddingVertical: 20,
-    paddingHorizontal: 40,
     borderRadius: 20,
     alignSelf: 'center',
+    marginTop: 20,
   },
-  postButtonText: {
+  createEventButtonText: {
     color: 'white',
     fontSize: 18,
+    textAlign: 'center',
+    fontWeight: 'bold',
   },
 });
