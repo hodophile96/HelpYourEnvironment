@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +16,12 @@ export default function EventDescription({ navigation }) {
   const [showTimePicker, setShowTimePicker] = useState(false);
 
   const handleCreateEvent = async () => {
+    // Validate all fields are filled
+    if (!eventType || !date || !time || !description || !location) {
+      Alert.alert('Missing Information', 'Please fill in all fields.');
+      return;
+    }
+
     try {
       // Get the currently signed-in user
       const currentUser = auth.currentUser;
@@ -71,11 +77,11 @@ export default function EventDescription({ navigation }) {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={32} color="green" />
+          <Ionicons name="arrow-back" size={32} color="black" />
         </TouchableOpacity>
         <Text style={styles.headerText}>Create Event</Text>
         <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-          <Ionicons name="person" size={32} color="green" />
+          <Ionicons name="person" size={32} color="black" />
         </TouchableOpacity>
       </View>
 
@@ -147,7 +153,7 @@ export default function EventDescription({ navigation }) {
       </View>
 
       <TouchableOpacity style={styles.createEventButton} onPress={handleCreateEvent}>
-        <Text style={styles.createEventButtonText}>Create Event</Text>
+        <Text style={styles.createEventButtonText}>Create</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -167,7 +173,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'center',
-    color: 'green',
+    color: 'black',
   },
   inputContainer: {
     marginBottom: 20,
@@ -183,11 +189,17 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 18,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 8,
     color: '#333',
-    paddingVertical: 10,
+    paddingVertical: 15,
   },
   timeText: {
     fontSize: 18,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 8,
     color: '#333',
     paddingVertical: 10,
   },
@@ -197,7 +209,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     padding: 10,
-    height: 120,
+    height: 80,
   },
   locationInput: {
     fontSize: 16,
@@ -208,14 +220,14 @@ const styles = StyleSheet.create({
   },
   createEventButton: {
     backgroundColor: 'green',
-    paddingVertical: 20,
-    borderRadius: 20,
+    paddingVertical: 10,
+    borderRadius: 15,
     alignSelf: 'center',
     marginTop: 20,
   },
   createEventButtonText: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 20,
     textAlign: 'center',
     fontWeight: 'bold',
   },
