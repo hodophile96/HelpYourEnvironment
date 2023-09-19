@@ -89,6 +89,10 @@ export default function Feed() {
     navigation.navigate('ContactListScreen');
   };
 
+  const openCalendar = () => {
+    navigation.navigate('JoinedEvents');
+  };
+
   return (
     <View style={styles.container}>
       {/* Custom Header */}
@@ -102,6 +106,9 @@ export default function Feed() {
         </TouchableOpacity>
         <TouchableOpacity onPress={openChat}>
           <Icon name="comment" size={30} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={openCalendar}>
+          <Icon name="calendar" size={30} />
         </TouchableOpacity>
       </View>
 
@@ -190,7 +197,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   createEventButton: {
-    backgroundColor: 'blue',
+    backgroundColor: 'green',
     marginHorizontal: 16,
     marginVertical: 10,
     paddingVertical: 12,

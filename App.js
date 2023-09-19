@@ -8,6 +8,7 @@ import Profile from './Profile';
 import SignUp from './SignUp';
 import ContactListScreen from './ContactListScreen';
 import ChatScreen from './ChatScreen';
+import JoinedEvents from './JoinedEvents'; // Import the JoinedEvents screen
 
 const Stack = createStackNavigator();
 
@@ -65,6 +66,14 @@ export default function App() {
           options={({ route }) => ({
             title: route.params.selectedUser.displayName, // Set the chat user's name as the title
           })}
+        />
+        {/* Add the JoinedEvents screen to the navigator */}
+        <Stack.Screen
+          name="JoinedEvents"
+          component={JoinedEvents}
+          options={{
+            title: 'Joined Events',
+          }}
         />
       </Stack.Navigator>
     </NavigationContainer>
