@@ -8,10 +8,11 @@ import { db, auth } from './firebase';
 export default function Feed() {
   const navigation = useNavigation();
   const [events, setEvents] = useState([]);
+  const [ascendingOrder, setAscendingOrder] = useState(true); // Sorting order state
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+  }, [ascendingOrder]); // Re-fetch events when sorting order changes
 
   const fetchEvents = async () => {
     try {
@@ -31,10 +32,26 @@ export default function Feed() {
           like: data.like || [],
         };
       });
-      setEvents(eventsData);
+
+      // Sort events based on date in ascending or descending order
+      const sortedEvents = eventsData.sort((a, b) => {
+        const dateA = a.date;
+        const dateB = b.date;
+        if (ascendingOrder) {
+          return dateA - dateB;
+        } else {
+          return dateB - dateA;
+        }
+      });
+
+      setEvents(sortedEvents);
     } catch (error) {
       console.error('Error fetching events:', error);
     }
+  };
+
+  const toggleSortingOrder = () => {
+    setAscendingOrder(!ascendingOrder); // Toggle sorting order
   };
 
   const handleJoin = async (eventId) => {
@@ -127,6 +144,21 @@ export default function Feed() {
         <Text style={styles.createEventButtonText}>Create Event</Text>
       </TouchableOpacity>
 
+      {/* Sort Button */}
+      <TouchableOpacity
+        style={styles.sortButton}
+        onPress={toggleSortingOrder}
+      >
+        <Icon
+          name={ascendingOrder ? 'sort-amount-asc' : 'sort-amount-desc'}
+          size={18}
+          color="#666"
+        />
+        <Text style={styles.sortButtonText}>
+          {ascendingOrder ? 'Sort Ascending' : 'Sort Descending'}
+        </Text>
+      </TouchableOpacity>
+
       {/* Event List */}
       <FlatList
         data={events}
@@ -208,6 +240,16 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 10,
+  },
+  sortButtonText: {
+    marginLeft: 4,
+    color: '#666',
   },
   eventCard: {
     backgroundColor: 'white',
