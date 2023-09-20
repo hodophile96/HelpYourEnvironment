@@ -114,9 +114,7 @@ export default function Feed() {
     <View style={styles.container}>
       {/* Custom Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={openDrawer}>
-          <Icon name="bars" size={30} style={styles.hamburgerIcon} />
-        </TouchableOpacity>
+       
         <Text style={styles.headerText}>Help Your Environment</Text>
         <TouchableOpacity onPress={goToProfile}>
           <Icon name="user" size={30} />
