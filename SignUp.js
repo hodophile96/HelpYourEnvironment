@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'; // Import updateProfile
 import { auth } from './firebase'; // Import the Firebase auth instance
 
 export default function SignUp({ navigation }) {
@@ -21,7 +21,14 @@ export default function SignUp({ navigation }) {
 
     try {
       // Create a new user with email and password
-      await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+
+      // Set the display name as First Name + Last Name
+      const user = userCredential.user;
+      const displayName = `${firstName} ${lastName}`;
+      await updateProfile(user, {
+        displayName: displayName,
+      });
 
       // Successful sign-up, you can now navigate to the Feed screen or any other screen
       navigation.navigate('Feed');
