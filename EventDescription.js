@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity, Alert, Image } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
+ import * as ImagePicker from 'react-native-image-picker'; // Import ImagePicker
 import { addDoc, collection } from 'firebase/firestore';
+//import ImagePicker from 'react-native-image-picker';
 import { db, auth } from './firebase'; // Import your Firebase configuration here
+
 
 export default function EventDescription({ navigation }) {
   const [eventType, setEventType] = useState('');
@@ -14,6 +17,26 @@ export default function EventDescription({ navigation }) {
   const [location, setLocation] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null); // State for selected image
+
+  const handleImageSelect = () => {
+    const options = {
+      title: 'Select Image',
+      mediaType: 'photo',
+      maxWidth: 800,
+      maxHeight: 800,
+    };
+
+    ImagePicker.showImagePicker(options, (response) => {
+      if (response.didCancel) {
+        console.log('Image selection cancelled');
+      } else if (response.error) {
+        console.error('ImagePicker Error: ', response.error);
+      } else {
+        setSelectedImage(response);
+      }
+    });
+  };
 
   const handleCreateEvent = async () => {
     // Validate all fields are filled
@@ -34,6 +57,12 @@ export default function EventDescription({ navigation }) {
       // Create a reference to the Firestore collection (e.g., 'events')
       const eventsCollectionRef = collection(db, 'events');
 
+      // Upload the selected image to Firebase Storage
+      let imageUrl = null;
+      if (selectedImage) {
+        imageUrl = await uploadImageToFirebaseStorage(selectedImage.uri);
+      }
+
       // Add a new document to the collection with the event details and user UID
       await addDoc(eventsCollectionRef, {
         eventType,
@@ -44,12 +73,14 @@ export default function EventDescription({ navigation }) {
         createdBy: currentUser.uid, // Store the user's UID
         join: 0, // Initialize join count to 0
         like: 0, // Initialize like count to 0
+        imageUrl, // Store the image URL if available
       });
 
-      // Clear input fields
+      // Clear input fields and selected image
       setEventType('');
       setDescription('');
       setLocation('');
+      setSelectedImage(null);
 
       // Navigate to the Feed Page after creating the event
       navigation.navigate('Feed');
@@ -150,7 +181,25 @@ export default function EventDescription({ navigation }) {
           onChangeText={(text) => setLocation(text)}
           style={styles.locationInput}
         />
+
+        
       </View>
+
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>Image:</Text>
+        
+        <TouchableOpacity onPress={handleImageSelect}>
+          <Text style={styles.selectImageText}>Select Image</Text>
+        </TouchableOpacity>
+        
+        {selectedImage && (
+          <Image
+            source={{ uri: selectedImage.uri }}
+            style={styles.selectedImage}
+          />
+        )}
+      </View>
+      
 
       <TouchableOpacity style={styles.createEventButton} onPress={handleCreateEvent}>
         <Text style={styles.createEventButtonText}>Create</Text>
@@ -230,5 +279,16 @@ const styles = StyleSheet.create({
     fontSize: 20,
     textAlign: 'center',
     fontWeight: 'bold',
+  },
+  selectedImage: {
+    width: 150,
+    height: 150,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  selectImageText: {
+    fontSize: 18,
+    color: 'blue',
+    marginTop: 10,
   },
 });
