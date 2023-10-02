@@ -254,7 +254,7 @@ export default function Feed() {
               <TouchableOpacity
                 onPress={() => openGoogleMaps(item.location.googleMapsLink)}
               >
-                <Icon name="map-marker" size={20} color="blue" />
+                <Icon name="map-marker" size={30} color="green" />
               </TouchableOpacity>
             </View>
             <Text style={styles.eventLocation}>{item.location.address}</Text>
@@ -267,7 +267,7 @@ export default function Feed() {
                 style={styles.actionButton}
                 onPress={() => handleLike(item.id)}
               >
-                <Icon name="thumbs-up" size={18} color="#666" />
+                <Icon name="thumbs-up" size={18} color="blue" />
                 <Text style={styles.actionButtonText}>
                   Like ({item.like.length})
                 </Text>
@@ -276,7 +276,7 @@ export default function Feed() {
                 style={styles.actionButton}
                 onPress={() => handleJoin(item.id)}
               >
-                <Icon name="user-plus" size={18} color="#666" />
+                <Icon name="user-plus" size={18} color="green" />
                 <Text style={styles.actionButtonText}>
                   Join ({item.join.length})
                 </Text>
@@ -334,7 +334,7 @@ export default function Feed() {
               </ScrollView>
               <TextInput
                 style={styles.commentInput}
-                placeholder="Add a comment..."
+                placeholder="    Add a comment..."
                 onChangeText={(text) => setCommentText(text)}
                 value={commentText}
               />
@@ -394,6 +394,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 16,
     marginTop: 10,
+    marginBottom:15,
   },
   sortButtonText: {
     marginLeft: 4,
@@ -401,10 +402,10 @@ const styles = StyleSheet.create({
   },
   eventCard: {
     backgroundColor: 'white',
-    borderRadius: 8,
+    borderRadius: 25,
     marginHorizontal: 16,
     marginVertical: 8,
-    padding: 16,
+    padding: 20,
     shadowColor: 'black',
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -447,13 +448,13 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   commentSection: {
-    marginTop: 16,
+    marginTop: 0,
   },
   sectionHeading: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: 10,
+    marginBottom: 0,
   },
   commentScrollView: {
     flex: 1,
@@ -488,12 +489,13 @@ const styles = StyleSheet.create({
   commentInput: {
     borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 4,
-    padding: 8,
+    borderRadius: 15,
+    padding: 2,
     marginTop: 8,
   },
   postComment: {
-    color: 'blue',
+    color: 'green',
     marginTop: 8,
+    fontSize:15
   },
 });
