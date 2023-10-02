@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Button, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { auth, db, uploadImageToFirebaseStorage } from './firebase'; // Import Firebase configuration and functions
 
 import {
@@ -12,7 +12,7 @@ import {
   where,
 } from 'firebase/firestore';
 
-const CreateGroupScreen = () => {
+const CreateGroupScreen = ({ navigation }) => {
   const [groupName, setGroupName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -29,7 +29,7 @@ const CreateGroupScreen = () => {
           const data = doc.data();
           return {
             id: doc.id,
-            name: data.name,
+            name: data.displayName, // Use the correct field name for display name
           };
         });
         setAllUsers(allUsersData);
@@ -50,9 +50,21 @@ const CreateGroupScreen = () => {
 
   const addUserToGroup = (user) => {
     setSelectedUsers([...selectedUsers, user]);
+    setSearchResults(searchResults.filter((u) => u.id !== user.id));
+  };
+
+  const removeUserFromGroup = (user) => {
+    setSelectedUsers(selectedUsers.filter((u) => u.id !== user.id));
+    setSearchResults([...searchResults, user]);
   };
 
   const createGroup = async () => {
+    if (!groupName) {
+      // Check if the group name is empty
+      Alert.alert('Group Name Required', 'Please enter a group name.');
+      return;
+    }
+
     try {
       const user = auth.currentUser;
       if (user) {
@@ -70,6 +82,11 @@ const CreateGroupScreen = () => {
         // Clear the group name input and selected users
         setGroupName('');
         setSelectedUsers([]);
+
+        // Redirect to GroupScreen
+        navigation.navigate('GroupScreen', {
+          groupId: newGroupDoc.id, // Pass the newly created group's ID
+        });
       }
     } catch (error) {
       console.error('Error creating a group:', error);
@@ -102,6 +119,18 @@ const CreateGroupScreen = () => {
           <TouchableOpacity onPress={() => addUserToGroup(item)}>
             <View style={styles.listItem}>
               <Text>{item.name}</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+      />
+      <Text style={styles.heading}>Selected Users</Text>
+      <FlatList
+        data={selectedUsers}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <TouchableOpacity onPress={() => removeUserFromGroup(item)}>
+            <View style={styles.listItem}>
+              <Text>{item.name} (Remove)</Text>
             </View>
           </TouchableOpacity>
         )}

@@ -1,25 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
-import { auth, db } from './firebase'; // Import your Firebase configuration here
+import { auth, db } from './firebase';
+import Icon from 'react-native-vector-icons/FontAwesome'; // Import FontAwesome icon
 
 const GroupScreen = () => {
   const [createdGroups, setCreatedGroups] = useState([]);
   const navigation = useNavigation();
+  const route = useRoute();
 
   useEffect(() => {
     const fetchGroups = async () => {
       try {
         const user = auth.currentUser;
         if (user) {
-          // Fetch the groups the user is part of
           const userGroupsCollection = collection(db, 'user_groups', user.uid, 'groups');
           const userGroupsQuery = query(userGroupsCollection);
           const userGroupsSnapshot = await getDocs(userGroupsQuery);
           const userGroupIds = userGroupsSnapshot.docs.map((doc) => doc.id);
 
-          // Fetch the group details
           const groupsCollection = collection(db, 'groups');
           const groupsQuery = query(groupsCollection, where('__name__', 'in', userGroupIds));
           const unsubscribe = onSnapshot(groupsQuery, (snapshot) => {
@@ -34,7 +34,6 @@ const GroupScreen = () => {
             setCreatedGroups(groupData);
           });
 
-          // Unsubscribe from the snapshot listener when the component unmounts
           return () => unsubscribe();
         }
       } catch (error) {
@@ -52,15 +51,21 @@ const GroupScreen = () => {
         data={createdGroups}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => navigation.navigate('GroupChat', { groupId: item.id })}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('GroupChat', { groupId: item.id })}
+          >
             <View style={styles.listItem}>
-              <Text>{item.name}</Text>
+              <Text style={styles.groupName}>{item.name}</Text>
+              <Icon name="comments" size={20} color="green" /> 
             </View>
           </TouchableOpacity>
         )}
       />
-      <TouchableOpacity onPress={() => navigation.navigate('CreateGroup')}>
-        <Text style={styles.createGroupButton}>Create New Group</Text>
+      <TouchableOpacity
+        style={styles.createGroupButton}
+        onPress={() => navigation.navigate('CreateGroup')}
+      >
+        <Text style={styles.createGroupButtonText}>Create New Group</Text>
       </TouchableOpacity>
     </View>
   );
@@ -70,22 +75,36 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#F5F5F5',
   },
   heading: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 20,
+    color: '#333',
   },
   listItem: {
-    padding: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
   },
+  groupName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
   createGroupButton: {
-    fontSize: 16,
-    color: '#007AFF',
-    marginTop: 10,
+    backgroundColor: 'green',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  createGroupButtonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFF',
   },
 });
 
