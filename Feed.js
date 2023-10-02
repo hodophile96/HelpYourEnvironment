@@ -19,6 +19,7 @@ import {
   arrayUnion,
   addDoc,
   deleteDoc,
+  getDoc,
 } from 'firebase/firestore';
 import { db, auth } from './firebase';
 
@@ -198,13 +199,76 @@ export default function Feed() {
   };
 
   const handleLike = async (eventId) => {
-    // Implement your like functionality here
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        console.error('No user is signed in.');
+        return;
+      }
+  
+      const eventRef = doc(db, 'events', eventId);
+      const eventDoc = await getDoc(eventRef);
+  
+      if (eventDoc.exists()) {
+        const eventData = eventDoc.data() || {};
+  
+        // Initialize the like array if it's missing
+        const likeArray = eventData.like || [];
+  
+        // Check if the user has already liked the event
+        if (likeArray.includes(user.uid)) {
+          console.error('User has already liked this event.');
+          return;
+        }
+  
+        // Update the event data to add the user's UID to the like array
+        await updateDoc(eventRef, {
+          like: arrayUnion(user.uid),
+        });
+  
+        // Fetch events again to update the UI
+        fetchEvents();
+      }
+    } catch (error) {
+      console.error('Error handling like:', error);
+    }
   };
-
+  
   const handleJoin = async (eventId) => {
-    // Implement your join functionality here
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        console.error('No user is signed in.');
+        return;
+      }
+  
+      const eventRef = doc(db, 'events', eventId);
+      const eventDoc = await getDoc(eventRef);
+  
+      if (eventDoc.exists()) {
+        const eventData = eventDoc.data() || {};
+  
+        // Initialize the join array if it's missing
+        const joinArray = eventData.join || [];
+  
+        // Check if the user has already joined the event
+        if (joinArray.includes(user.uid)) {
+          console.error('User has already joined this event.');
+          return;
+        }
+  
+        // Update the event data to add the user's UID to the join array
+        await updateDoc(eventRef, {
+          join: arrayUnion(user.uid),
+        });
+  
+        // Fetch events again to update the UI
+        fetchEvents();
+      }
+    } catch (error) {
+      console.error('Error handling join:', error);
+    }
   };
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
