@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'; // Import updateProfile
-import { auth , doc} from './firebase'; // Import the Firebase auth instance
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { collection, doc, setDoc } from 'firebase/firestore'; // Import Firestore functions
+import { auth, db } from './firebase';
 
 export default function SignUp({ navigation }) {
   const [firstName, setFirstName] = useState('');
@@ -30,13 +31,15 @@ export default function SignUp({ navigation }) {
         displayName: displayName,
       });
 
-      const userDocRef = doc(firestore, 'users', user.uid);
-    const userData = {
-      displayName: displayName,
-      city: city,
-      email: email,
-    };
-    await setDoc(userDocRef, userData);
+      // Create a user record in the Firestore "users" collection
+      const userDocRef = doc(db, 'users', user.uid);
+      await setDoc(userDocRef, {
+        displayName: displayName,
+        bio: '', // You can set a default bio or leave it empty
+        likedEvents: [], // Initialize liked events as an empty array
+        joinedEvents: [], // Initialize joined events as an empty array
+        city: city, // You can include the user's city as well
+      });
 
       // Successful sign-up, you can now navigate to the Feed screen or any other screen
       navigation.navigate('Feed');
