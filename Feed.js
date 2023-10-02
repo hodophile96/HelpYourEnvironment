@@ -8,7 +8,9 @@ import {
   TextInput,
   ScrollView,
   Linking,
+  Button,
 } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native';
 import {
@@ -22,6 +24,7 @@ import {
   getDoc,
 } from 'firebase/firestore';
 import { db, auth } from './firebase';
+import Geolocation from 'react-native-geolocation-service'; // Import geolocation library
 
 export default function Feed() {
   const navigation = useNavigation();
@@ -32,6 +35,83 @@ export default function Feed() {
   const [userDisplayName, setUserDisplayName] = useState('');
   const [showAllComments, setShowAllComments] = useState(false);
   const [commentsToShow, setCommentsToShow] = useState(2);
+  const [userLocation, setUserLocation] = useState(null); // Store user's current location
+  const [filterDistance, setFilterDistance] = useState(15); // Default filter distance
+  const [selectedDistance, setSelectedDistance] = useState('All'); // Default: Show all events
+  const [selectedSort, setSelectedSort] = useState('asc');
+
+// Function to get the user's current location
+const getUserLocation = () => {
+  Geolocation.getCurrentPosition(
+    (position) => {
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
+
+      console.log('User Location Latitude:', latitude);
+      console.log('User Location Longitude:', longitude);
+
+      // Now you can use the latitude and longitude for further processing.
+    },
+    (error) => {
+      console.error('Error getting user location:', error);
+    },
+    { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
+  );
+};
+
+
+
+useEffect(() => {
+  fetchUserDisplayName();
+  fetchEvents();
+  fetchComments();
+  getUserLocation(); // Get user's location when the component mounts
+}, [ascendingOrder]);
+
+// Function to filter events based on distance
+const filterEventsByDistance = (events, distance) => {
+  if (!userLocation) {
+    return events; // If user location is not available, return all events
+  }
+
+  return events.filter((event) => {
+    // Calculate the distance between user and event using Haversine formula
+    const eventLocation = {
+      latitude: event.location.latitude,
+      longitude: event.location.longitude,
+    };
+
+    const rad = (x) => (x * Math.PI) / 180;
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = rad(eventLocation.latitude - userLocation.latitude);
+    const dLong = rad(eventLocation.longitude - userLocation.longitude);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(rad(userLocation.latitude)) *
+        Math.cos(rad(eventLocation.latitude)) *
+        Math.sin(dLong / 2) *
+        Math.sin(dLong / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distanceInKm = R * c;
+    const distanceInMiles = distanceInKm * 0.621371;
+
+    return distanceInMiles <= distance;
+  });
+};
+const handleFilterByDistance = (distance) => {
+  setSelectedDistance(distance);
+
+  if (distance === 'All') {
+    // Show all events without filtering
+    fetchEvents();
+  } else {
+    // Filter events based on the selected distance and update the state
+    const filteredEvents = filterEventsByDistance(events, distance);
+    setEvents(filteredEvents);
+  }
+};
 
   const fetchUserDisplayName = async () => {
     try {
@@ -82,8 +162,9 @@ export default function Feed() {
   };
 
   const toggleSortingOrder = () => {
-    setAscendingOrder(!ascendingOrder);
+    setSelectedSort(selectedSort === 'asc' ? 'desc' : 'asc');
   };
+
 
   const fetchComments = async () => {
     try {
@@ -297,16 +378,35 @@ export default function Feed() {
         <Text style={styles.createEventButtonText}>Create Event</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.sortButton} onPress={toggleSortingOrder}>
-        <Icon
-          name={ascendingOrder ? 'sort-amount-asc' : 'sort-amount-desc'}
-          size={18}
-          color="#666"
-        />
-        <Text style={styles.sortButtonText}>
-          {ascendingOrder ? 'Sort Ascending' : 'Sort Descending'}
-        </Text>
-      </TouchableOpacity>
+      <View style={styles.filtersContainer}>
+        <View style={styles.filterContainer}>
+          <Text style={styles.filterText}>Sort Order:</Text>
+          <TouchableOpacity style={styles.sortButton} onPress={toggleSortingOrder}>
+            <Icon
+              name={selectedSort === 'asc' ? 'sort-amount-asc' : 'sort-amount-desc'}
+              size={18}
+              color="#666"
+            />
+            <Text style={styles.sortButtonText}>
+              {selectedSort === 'asc' ? 'Ascending' : 'Descending'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.filterContainer}>
+          <Text style={styles.filterText}>View Events: </Text>
+          <Picker
+            style={styles.picker}
+            selectedValue={selectedDistance}
+            onValueChange={(itemValue) => handleFilterByDistance(itemValue)}
+          >
+            <Picker.Item label="Within 15 Miles" value="15" />
+            <Picker.Item label="Within 25 Miles" value="25" />
+            <Picker.Item label="Within 50 Miles" value="50" />
+            <Picker.Item label="Show All Events" value="All" />
+          </Picker>
+        </View>
+      </View>
 
       <FlatList
         data={events}
@@ -561,5 +661,22 @@ const styles = StyleSheet.create({
     color: 'green',
     marginTop: 8,
     fontSize:15
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 10,
+    
+    marginBottom: 5,
+  },
+  filterText: {
+    marginRight: 10,
+    fontSize:15,
+  },
+  picker: {
+    flex: 1, // Expand to fill available space
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 15,
   },
 });
