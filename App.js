@@ -8,7 +8,11 @@ import Profile from './Profile';
 import SignUp from './SignUp';
 import ContactListScreen from './ContactListScreen';
 import ChatScreen from './ChatScreen';
-import JoinedEvents from './JoinedEvents'; // Import the JoinedEvents screen
+import JoinedEvents from './JoinedEvents';
+import GroupScreen from './GroupScreen';
+import GroupChat from './GroupChat';
+import CreateGroupScreen from './CreateGroupScreen';
+import LocationSearch from './LocationSearch'; // Import the LocationScreen component
 
 const Stack = createStackNavigator();
 
@@ -52,7 +56,6 @@ export default function App() {
             title: 'Profile',
           }}
         />
-        {/* Add the ContactListScreen and ChatScreen components to the navigator */}
         <Stack.Screen
           name="ContactListScreen"
           component={ContactListScreen}
@@ -64,15 +67,43 @@ export default function App() {
           name="ChatScreen"
           component={ChatScreen}
           options={({ route }) => ({
-            title: route.params.selectedUser.displayName, // Set the chat user's name as the title
+            title: route.params.selectedUser.displayName,
           })}
         />
-        {/* Add the JoinedEvents screen to the navigator */}
         <Stack.Screen
           name="JoinedEvents"
           component={JoinedEvents}
           options={{
             title: 'Joined Events',
+          }}
+        />
+        <Stack.Screen
+          name="Groups"
+          component={GroupScreen}
+          options={{
+            title: 'Groups',
+          }}
+        />
+        <Stack.Screen
+          name="CreateGroup"
+          component={CreateGroupScreen}
+          options={{
+            title: 'Create Group',
+          }}
+        />
+        <Stack.Screen
+          name="GroupChat"
+          component={GroupChat}
+          options={({ route }) => ({
+            title: 'Group Chat',
+          })}
+        />
+        {/* Add the LocationScreen to the navigator */}
+        <Stack.Screen
+          name="LocationSearch"
+          component={LocationSearch}
+          options={{
+            title: 'Location Search',
           }}
         />
       </Stack.Navigator>

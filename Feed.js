@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TextInput,
   ScrollView,
+  Linking,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native';
@@ -182,12 +183,26 @@ export default function Feed() {
     navigation.navigate('EventDescription');
   };
 
-  const openChat = () => {
-    navigation.navigate('ContactListScreen');
+  const openGroups = () => {
+    navigation.navigate('Groups');
   };
 
   const openCalendar = () => {
     navigation.navigate('JoinedEvents');
+  };
+
+  const openGoogleMaps = (googleMapsLink) => {
+    if (googleMapsLink) {
+      Linking.openURL(googleMapsLink);
+    }
+  };
+
+  const handleLike = async (eventId) => {
+    // Implement your like functionality here
+  };
+
+  const handleJoin = async (eventId) => {
+    // Implement your join functionality here
   };
 
   return (
@@ -197,8 +212,8 @@ export default function Feed() {
         <TouchableOpacity onPress={goToProfile}>
           <Icon name="user" size={30} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={openChat}>
-          <Icon name="comment" size={30} />
+        <TouchableOpacity onPress={openGroups}>
+          <Icon name="users" size={30} />
         </TouchableOpacity>
         <TouchableOpacity onPress={openCalendar}>
           <Icon name="calendar" size={30} />
@@ -236,8 +251,13 @@ export default function Feed() {
           <View style={styles.eventCard}>
             <View style={styles.eventHeader}>
               <Text style={styles.eventType}>{item.eventType}</Text>
-              <Text style={styles.eventLocation}>{item.location}</Text>
+              <TouchableOpacity
+                onPress={() => openGoogleMaps(item.location.googleMapsLink)}
+              >
+                <Icon name="map-marker" size={20} color="blue" />
+              </TouchableOpacity>
             </View>
+            <Text style={styles.eventLocation}>{item.location.address}</Text>
             <Text style={styles.eventDateTime}>
               Date: {item.date.toLocaleDateString()} | Time: {item.time}
             </Text>
@@ -318,7 +338,9 @@ export default function Feed() {
                 onChangeText={(text) => setCommentText(text)}
                 value={commentText}
               />
-              <TouchableOpacity onPress={() => handleComment(item.id, commentText)}>
+              <TouchableOpacity
+                onPress={() => handleComment(item.id, commentText)}
+              >
                 <Text style={styles.postComment}>Post</Text>
               </TouchableOpacity>
             </View>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, TextInput, FlatList, StyleSheet, Alert } from 'react-native';
 import ImagePicker from 'react-native-image-picker';
-import { collection, getDocs, doc, deleteDoc, updateDoc, arrayRemove, arrayUnion, getDoc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, deleteDoc, updateDoc, getDoc } from 'firebase/firestore';
 import { auth, db, storage } from './firebase'; // Import your Firebase auth and Firestore instances
 import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome'; // Import the FontAwesome icon component
 
@@ -57,7 +57,7 @@ export default function Profile({ navigation }) {
           date: data.date.toDate(),
           time: data.time,
           description: data.description,
-          location: data.location,
+          location: data.location, // Assuming 'location' is an object with properties 'name', 'address', and 'googleMapsLink'
           createdBy: data.createdBy,
         };
       });
@@ -174,21 +174,21 @@ export default function Profile({ navigation }) {
       </TouchableOpacity>
       <Text style={styles.eventHeader}>Events Created by You</Text>
       <FlatList
-        data={events.filter((event) => event.createdBy === auth.currentUser.uid)}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.eventCard}>
-            <Text>{item.eventType}</Text>
-            <Text>Date: {item.date.toDateString()}</Text>
-            <Text>Time: {item.time}</Text>
-            <Text>Description: {item.description}</Text>
-            <Text>Location: {item.location}</Text>
-            <TouchableOpacity onPress={() => confirmDeleteEvent(item.id)}>
-              <Text style={styles.deleteButton}>Delete Event</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      />
+  data={events.filter((event) => event.createdBy === auth.currentUser.uid)}
+  keyExtractor={(item) => item.id}
+  renderItem={({ item }) => (
+    <View style={styles.eventCard}>
+      <Text>{item.eventType}</Text>
+      <Text>Date: {item.date.toDateString()}</Text> 
+      <Text>Time: {item.time}</Text> 
+      <Text>Description: {item.description}</Text>
+      <Text>Location: {item.location.name}</Text>
+      <TouchableOpacity onPress={() => confirmDeleteEvent(item.id)}>
+        <Text style={styles.deleteButton}>Delete Event</Text>
+      </TouchableOpacity>
+    </View>
+  )}
+/>
     </View>
   );
 }

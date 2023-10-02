@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'; // Import updateProfile
-import { auth } from './firebase'; // Import the Firebase auth instance
+import { auth , doc} from './firebase'; // Import the Firebase auth instance
 
 export default function SignUp({ navigation }) {
   const [firstName, setFirstName] = useState('');
@@ -29,6 +29,14 @@ export default function SignUp({ navigation }) {
       await updateProfile(user, {
         displayName: displayName,
       });
+
+      const userDocRef = doc(firestore, 'users', user.uid);
+    const userData = {
+      displayName: displayName,
+      city: city,
+      email: email,
+    };
+    await setDoc(userDocRef, userData);
 
       // Successful sign-up, you can now navigate to the Feed screen or any other screen
       navigation.navigate('Feed');
