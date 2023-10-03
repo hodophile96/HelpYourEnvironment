@@ -8,6 +8,7 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -23,6 +24,21 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from './firebase';
 
+// Function to fetch user display names based on their user IDs
+async function fetchUserNames(userIds) {
+  const usersCollection = collection(db, 'users');
+  const usersQuery = query(usersCollection, where('__name__', 'in', userIds));
+  const usersSnapshot = await getDocs(usersQuery);
+
+  const userNames = {};
+  usersSnapshot.forEach((doc) => {
+    const data = doc.data();
+    userNames[doc.id] = data.displayName;
+  });
+
+  return userNames;
+}
+
 export default function GroupChat() {
   const navigation = useNavigation();
   const route = useRoute();
@@ -30,41 +46,26 @@ export default function GroupChat() {
 
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
+  const [userNames, setUserNames] = useState({});
+
+  // Fetch user names for messages in the current group
+  const fetchUserNamesForMessages = async () => {
+    try {
+      const userIds = [...new Set(messages.map((message) => message.createdBy))];
+      const names = await fetchUserNames(userIds);
+      setUserNames(names);
+    } catch (error) {
+      console.error('Error fetching user names:', error);
+    }
+  };
 
   useEffect(() => {
     fetchMessages();
-
-    // Subscribe to real-time updates when new messages arrive
-    const messagesCollection = collection(db, 'messages');
-    const messagesQuery = query(
-      messagesCollection,
-      where('groupId', '==', groupId),
-      orderBy('createdAt')
-    );
-
-    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
-      const messageData = snapshot.docs.map((doc) => {
-        const data = doc.data();
-        const createdAt = data.createdAt ? data.createdAt.toDate() : null; // Check if createdAt is not null
-      
-        return {
-          id: doc.id,
-          text: data.text,
-          createdBy: data.createdBy,
-          createdAt: createdAt, // Assign the value or null
-        };
-      });
-      
-      setMessages(messageData);
-      
-    });
-
-    return () => unsubscribe();
   }, [groupId]);
 
+  // Fetch existing messages for the group
   const fetchMessages = async () => {
     try {
-      // Fetch existing messages for the group
       const messagesCollection = collection(db, 'messages');
       const messagesQuery = query(
         messagesCollection,
@@ -83,6 +84,9 @@ export default function GroupChat() {
         };
       });
       setMessages(messageData);
+
+      // Fetch user names after messages are loaded
+      fetchUserNamesForMessages();
     } catch (error) {
       console.error('Error fetching messages:', error);
     }
@@ -120,15 +124,29 @@ export default function GroupChat() {
         <View />
       </View>
 
-      <FlatList
-        data={messages}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.message}>
-            <Text style={styles.messageText}>{item.text}</Text>
+      <ScrollView
+        style={styles.messageContainer}
+        contentContainerStyle={styles.messageContent}
+      >
+        {messages.map((message) => (
+          <View
+            key={message.id}
+            style={[
+              styles.message,
+              message.createdBy === auth.currentUser.uid
+                ? styles.rightMessage
+                : styles.leftMessage,
+            ]}
+          >
+            <Text style={styles.messageText}>{message.text}</Text>
+            <Text style={styles.senderName}>
+              {message.createdBy === auth.currentUser.uid
+                ? 'You'
+                : userNames[message.createdBy] || 'Other User'}
+            </Text>
           </View>
-        )}
-      />
+        ))}
+      </ScrollView>
 
       <View style={styles.inputContainer}>
         <TextInput
@@ -164,16 +182,38 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
+  messageContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  messageContent: {
+    paddingTop: 8,
+    paddingBottom: 60,
+  },
   message: {
     backgroundColor: 'white',
     borderRadius: 8,
-    margin: 8,
+    marginVertical: 8,
     padding: 12,
-    alignSelf: 'flex-start',
     maxWidth: '70%',
+  },
+  leftMessage: {
+    alignSelf: 'flex-start',
+    marginLeft: 10,
+    backgroundColor: '#EFEFEF',
+  },
+  rightMessage: {
+    alignSelf: 'flex-end',
+    marginRight: 10,
+    backgroundColor: 'green',
   },
   messageText: {
     fontSize: 16,
+  },
+  senderName: {
+    fontSize: 12,
+    marginTop: 4,
+    textAlign: 'right',
   },
   inputContainer: {
     flexDirection: 'row',
