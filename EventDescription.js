@@ -58,6 +58,8 @@ export default function EventDescription() {
         return;
       }
 
+      const displayName = currentUser.displayName || '';
+
       const eventsCollectionRef = collection(db, 'events');
 
       let imageUrl = null;
@@ -72,6 +74,7 @@ export default function EventDescription() {
         description,
         location, // Include the selected location
         createdBy: currentUser.uid,
+        createdByDisplayName: displayName, 
         join: 0,
         like: 0,
         imageUrl,
