@@ -19,6 +19,7 @@ import {
   onSnapshot,
   addDoc,
   serverTimestamp,
+  getDocs,
 } from 'firebase/firestore';
 import { db, auth } from './firebase';
 
@@ -44,14 +45,18 @@ export default function GroupChat() {
     const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
       const messageData = snapshot.docs.map((doc) => {
         const data = doc.data();
+        const createdAt = data.createdAt ? data.createdAt.toDate() : null; // Check if createdAt is not null
+      
         return {
           id: doc.id,
           text: data.text,
           createdBy: data.createdBy,
-          createdAt: data.createdAt.toDate(),
+          createdAt: createdAt, // Assign the value or null
         };
       });
+      
       setMessages(messageData);
+      
     });
 
     return () => unsubscribe();
