@@ -45,7 +45,7 @@ const GroupScreen = () => {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <TouchableOpacity
-            onPress={() => navigation.navigate('GroupChat', { groupId: item.id })}
+            onPress={() => navigation.navigate('GroupChat', { groupId: item.id, groupName: item.name })}
           >
             <View style={styles.listItem}>
               <Text style={styles.groupName}>{item.name}</Text>

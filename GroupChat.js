@@ -21,60 +21,50 @@ import {
   addDoc,
   serverTimestamp,
   getDocs,
+  getDoc,
+  doc,
 } from 'firebase/firestore';
 import { db, auth } from './firebase';
-
-// Function to fetch user display names based on their user IDs
-async function fetchUserNames(userIds) {
-  const usersCollection = collection(db, 'users');
-  const usersQuery = query(usersCollection, where('__name__', 'in', userIds));
-  const usersSnapshot = await getDocs(usersQuery);
-
-  const userNames = {};
-  usersSnapshot.forEach((doc) => {
-    const data = doc.data();
-    userNames[doc.id] = data.displayName;
-  });
-
-  return userNames;
-}
 
 export default function GroupChat() {
   const navigation = useNavigation();
   const route = useRoute();
   const groupId = route.params?.groupId;
+  const groupName = route.params?.groupName;
 
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [userNames, setUserNames] = useState({});
 
-  // Fetch user names for messages in the current group
-  const fetchUserNamesForMessages = async () => {
-    try {
-      const userIds = [...new Set(messages.map((message) => message.createdBy))];
-      const names = await fetchUserNames(userIds);
-      setUserNames(names);
-    } catch (error) {
-      console.error('Error fetching user names:', error);
-    }
-  };
+  // Function to fetch user display names based on their user IDs
+  async function fetchUserNames(userIds) {
+    const usersCollection = collection(db, 'users');
+    const userDocs = await Promise.all(
+      userIds.map(async (userId) => {
+        const userDoc = await getDoc(doc(usersCollection, userId));
+        return { id: userId, displayName: userDoc.data()?.displayName || 'Other User' };
+      })
+    );
 
+    const userNames = {};
+    userDocs.forEach((userDoc) => {
+      userNames[userDoc.id] = userDoc.displayName;
+    });
+
+    return userNames;
+  }
+
+  // Subscribe to real-time updates when new messages arrive
   useEffect(() => {
-    fetchMessages();
-  }, [groupId]);
+    const messagesCollection = collection(db, 'messages');
+    const messagesQuery = query(
+      messagesCollection,
+      where('groupId', '==', groupId),
+      orderBy('createdAt')
+    );
 
-  // Fetch existing messages for the group
-  const fetchMessages = async () => {
-    try {
-      const messagesCollection = collection(db, 'messages');
-      const messagesQuery = query(
-        messagesCollection,
-        where('groupId', '==', groupId),
-        orderBy('createdAt')
-      );
-      const messagesSnapshot = await getDocs(messagesQuery);
-
-      const messageData = messagesSnapshot.docs.map((doc) => {
+    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+      const messageData = snapshot.docs.map((doc) => {
         const data = doc.data();
         return {
           id: doc.id,
@@ -83,12 +73,24 @@ export default function GroupChat() {
           createdAt: data.createdAt.toDate(),
         };
       });
+
       setMessages(messageData);
 
-      // Fetch user names after messages are loaded
+      // Fetch user names after messages are updated
       fetchUserNamesForMessages();
+    });
+
+    return () => unsubscribe();
+  }, [groupId]);
+
+  // Fetch user names for messages in the current group
+  const fetchUserNamesForMessages = async () => {
+    try {
+      const userIds = messages.map((message) => message.createdBy);
+      const names = await fetchUserNames(userIds);
+      setUserNames(names);
     } catch (error) {
-      console.error('Error fetching messages:', error);
+      console.error('Error fetching user names:', error);
     }
   };
 
@@ -117,10 +119,7 @@ export default function GroupChat() {
       style={styles.container}
     >
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-left" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.groupName}>Group Chat</Text>
+        <Text style={styles.groupName}>{groupName}</Text>
         <View />
       </View>
 
@@ -142,7 +141,7 @@ export default function GroupChat() {
             <Text style={styles.senderName}>
               {message.createdBy === auth.currentUser.uid
                 ? 'You'
-                : userNames[message.createdBy] || 'Other User'}
+                : userNames[message.createdBy]}
             </Text>
           </View>
         ))}
@@ -205,7 +204,7 @@ const styles = StyleSheet.create({
   rightMessage: {
     alignSelf: 'flex-end',
     marginRight: 10,
-    backgroundColor: 'green',
+    backgroundColor: 'white',
   },
   messageText: {
     fontSize: 16,
