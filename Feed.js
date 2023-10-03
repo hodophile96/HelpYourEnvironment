@@ -25,6 +25,7 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import Geolocation from 'react-native-geolocation-service'; // Import geolocation library
+import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome'; // Import the FontAwesome icon component
 
 export default function Feed() {
   const navigation = useNavigation();
@@ -128,7 +129,8 @@ const handleFilterByDistance = (distance) => {
     fetchUserDisplayName();
     fetchEvents();
     fetchComments();
-  }, [ascendingOrder]);
+  }, [ascendingOrder, events]); // Add 'events' as a dependency
+  
 
   const fetchEvents = async () => {
     try {
@@ -146,20 +148,23 @@ const handleFilterByDistance = (distance) => {
           createdBy: data.createdBy,
           join: data.join || [],
           like: data.like || [],
+          createdByDisplayName: data.createdByDisplayName,
         };
       });
-
-      const sortedEvents = eventsData.sort((a, b) => {
-        const dateA = a.date;
-        const dateB = b.date;
-        return ascendingOrder ? dateA - dateB : dateB - dateA;
-      });
-
+  
+      let sortedEvents = [...eventsData];
+      if (selectedSort === 'asc') {
+        sortedEvents.sort((a, b) => a.date - b.date);
+      } else {
+        sortedEvents.sort((a, b) => b.date - a.date);
+      }
+  
       setEvents(sortedEvents);
     } catch (error) {
       console.error('Error fetching events:', error);
     }
   };
+  
 
   const toggleSortingOrder = () => {
     setSelectedSort(selectedSort === 'asc' ? 'desc' : 'asc');
@@ -416,23 +421,26 @@ const handleFilterByDistance = (distance) => {
       </View>
 
       <FlatList
-        data={events}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.eventCard}>
-            <View style={styles.eventHeader}>
-              <Text style={styles.eventType}>{item.eventType}</Text>
-              <TouchableOpacity
-                onPress={() => openGoogleMaps(item.location.googleMapsLink)}
-              >
-                <Icon name="map-marker" size={30} color="green" />
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.eventLocation}>{item.location.address}</Text>
+  data={events}
+  keyExtractor={(item) => item.id}
+  renderItem={({ item }) => (
+    <View style={styles.eventCard}>
+      <View style={styles.eventUserContainer}>
+        <FontAwesomeIcon name="user-circle" size={24} color="black" style={styles.profileIcon} />
+        <Text style={styles.eventUser}>{item.createdByDisplayName}</Text>
+      </View>
+      <View style={styles.eventHeader}>
+        <Text style={styles.eventType}>{item.eventType}</Text>
+        <TouchableOpacity onPress={() => openGoogleMaps(item.location.googleMapsLink)}>
+          <Icon name="map-marker" size={30} color="green" />
+        </TouchableOpacity>
+      </View>
+            <Text style={styles.eventLocation}>Address: {item.location.address}</Text>
             <Text style={styles.eventDateTime}>
               Date: {item.date.toLocaleDateString()} | Time: {item.time}
             </Text>
             <Text style={styles.eventDescription}>{item.description}</Text>
+            
             <View style={styles.actionsContainer}>
               <TouchableOpacity
                 style={styles.actionButton}
@@ -686,4 +694,20 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 15,
   },
+  eventUserContainer: {
+    flexDirection: 'row', // Display items in a row
+    alignItems: 'center', // Vertically align items
+    marginBottom: 8, // Add some margin between user info and event header
+  },
+  
+  profileIcon: {
+    marginRight: 8, // Add some space between the icon and the user's display name
+  },
+  
+  eventUser: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'black',
+  },
+
 });
