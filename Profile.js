@@ -9,6 +9,8 @@ export default function Profile({ navigation }) {
   const [profileImage, setProfileImage] = useState(null);
   const [bio, setBio] = useState('');
   const [events, setEvents] = useState([]);
+  const [displayName, setDisplayName] = useState('');
+
 
   // Function to select a profile image from the gallery
   const selectProfileImage = () => {
@@ -30,21 +32,23 @@ export default function Profile({ navigation }) {
   const fetchBio = async () => {
     try {
       const user = auth.currentUser;
-
+  
       if (user) {
         const userRef = doc(db, 'users', user.uid);
         const userDoc = await getDoc(userRef);
-
+  
         if (userDoc.exists()) {
           const userData = userDoc.data();
           setBio(userData.bio || '');
+          setDisplayName(userData.displayName || ''); // Update to set the displayName
         }
       }
     } catch (error) {
       console.error('Error fetching bio:', error);
     }
   };
-
+  
+  
   const fetchEvents = async () => {
     try {
       const eventsCollection = collection(db, 'events');
@@ -61,11 +65,17 @@ export default function Profile({ navigation }) {
           createdBy: data.createdBy,
         };
       });
-      setEvents(eventsData);
+  
+      // Filter events created by the currently signed-in user
+      const user = auth.currentUser;
+      const userEvents = eventsData.filter((event) => event.createdBy === user.uid);
+  
+      setEvents(userEvents);
     } catch (error) {
       console.error('Error fetching events:', error);
     }
   };
+  
 
   useEffect(() => {
     fetchBio();
@@ -150,28 +160,29 @@ export default function Profile({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-        <Text style={styles.signOutButtonText}>Sign Out</Text>
-      </TouchableOpacity>
+      <TouchableOpacity
+  style={styles.signOutButton}
+  onPress={handleSignOut}
+>
+  <View style={styles.buttonContainer}>
+    <Text style={styles.signOutButtonText}>Sign Out</Text>
+  </View>
+</TouchableOpacity>
       <View style={styles.profileContainer}>
-        <TouchableOpacity onPress={selectProfileImage}>
-          <View style={styles.profileImageContainer}>
-            {profileImage ? (
-              <Image source={profileImage} style={styles.profileImage} />
-            ) : (
-              <FontAwesomeIcon name="user-circle" size={100} color="gray" /> // Replace with your icon
-            )}
-          </View>
-        </TouchableOpacity>
-        <TextInput
-          style={styles.bioInput}
-          value={bio}
-          onChangeText={setBio}
-        />
-      </View>
-      <TouchableOpacity style={styles.saveProfileButton} onPress={handleSaveProfile}>
-        <Text style={styles.saveProfileButtonText}>Save Profile</Text>
-      </TouchableOpacity>
+  
+    <View style={styles.profileImageContainer}>
+      {profileImage ? (
+        <Image source={profileImage} style={styles.profileImage} />
+      ) : (
+        <FontAwesomeIcon name="user-circle" size={100} color="gray" />
+      )}
+    </View>
+ 
+  <View style={styles.usernameContainer}>
+    <Text style={styles.usernameText}>{displayName}</Text>
+  </View>
+</View>
+     
       <Text style={styles.eventHeader}>Events Created by You</Text>
       <FlatList
   data={events.filter((event) => event.createdBy === auth.currentUser.uid)}
@@ -204,9 +215,19 @@ const styles = StyleSheet.create({
     right: 16,
     padding: 8,
   },
+  buttonContainer: {
+    flexDirection:'row',
+    backgroundColor: 'green', // Customize the background color
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   signOutButtonText: {
-    color: 'blue',
+    color: 'white', // Customize the text color
     fontSize: 16,
+  
   },
   profileContainer: {
     flexDirection: 'row',
