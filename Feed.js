@@ -194,12 +194,18 @@ const handleFilterByDistance = (distance) => {
 
   const handleComment = async (eventId, text) => {
     try {
+      // Check if the comment text is empty
+      if (text.trim() === '') {
+        console.error('Comment text cannot be empty.');
+        return;
+      }
+  
       const user = auth.currentUser;
       if (!user) {
         console.error('No user is signed in.');
         return;
       }
-
+  
       const commentRef = collection(db, 'comments');
       await addDoc(commentRef, {
         eventId,
@@ -207,13 +213,14 @@ const handleFilterByDistance = (distance) => {
         createdBy: user.uid,
         userName: userDisplayName,
       });
-
+  
       fetchComments();
       setCommentText('');
     } catch (error) {
       console.error('Error adding comment:', error);
     }
   };
+  
 
   const handleEditComment = async (eventId, commentId, newText) => {
     try {
