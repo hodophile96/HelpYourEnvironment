@@ -64,7 +64,7 @@ const CreateGroupScreen = ({ navigation }) => {
       Alert.alert('Group Name Required', 'Please enter a group name.');
       return;
     }
-
+  
     try {
       const user = auth.currentUser;
       if (user) {
@@ -72,17 +72,17 @@ const CreateGroupScreen = ({ navigation }) => {
         const groupRef = collection(db, 'groups');
         const newGroupDoc = await addDoc(groupRef, {
           name: groupName,
-          members: selectedUsers.map((user) => user.id), // Add selected users to the group
+          members: [user.uid, ...selectedUsers.map((user) => user.id)], // Add the current user and selected users to the group
         });
-
+  
         // Add the group to the user's groups
         const userGroupsRef = collection(db, 'user_groups', user.uid, 'groups');
         await setDoc(doc(userGroupsRef, newGroupDoc.id), {});
-
+  
         // Clear the group name input and selected users
         setGroupName('');
         setSelectedUsers([]);
-
+  
         // Redirect to GroupScreen
         navigation.navigate('GroupScreen', {
           groupId: newGroupDoc.id, // Pass the newly created group's ID
@@ -92,6 +92,7 @@ const CreateGroupScreen = ({ navigation }) => {
       console.error('Error creating a group:', error);
     }
   };
+  
 
   return (
     <View style={styles.container}>
