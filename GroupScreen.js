@@ -1,54 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { useNavigation } from '@react-navigation/native';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import Icon from 'react-native-vector-icons/FontAwesome'; // Import FontAwesome icon
 
 const GroupScreen = () => {
-  const [createdGroups, setCreatedGroups] = useState([]);
+  const [userGroups, setUserGroups] = useState([]);
   const navigation = useNavigation();
-  const route = useRoute();
 
   useEffect(() => {
-    const fetchGroups = async () => {
+    const fetchUserGroups = async () => {
       try {
         const user = auth.currentUser;
         if (user) {
-          const userGroupsCollection = collection(db, 'user_groups', user.uid, 'groups');
-          const userGroupsQuery = query(userGroupsCollection);
-          const userGroupsSnapshot = await getDocs(userGroupsQuery);
-          const userGroupIds = userGroupsSnapshot.docs.map((doc) => doc.id);
-
+          // Query 'groups' to get the groups where the signed-in user is a member
           const groupsCollection = collection(db, 'groups');
-          const groupsQuery = query(groupsCollection, where('__name__', 'in', userGroupIds));
-          const unsubscribe = onSnapshot(groupsQuery, (snapshot) => {
-            const groupData = snapshot.docs.map((doc) => {
-              const data = doc.data();
-              return {
-                id: doc.id,
-                name: data.name,
-              };
-            });
+          const groupsQuery = query(groupsCollection, where('members', 'array-contains', user.uid));
+          const groupsSnapshot = await getDocs(groupsQuery);
 
-            setCreatedGroups(groupData);
+          const userGroupsData = groupsSnapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              name: data.name,
+            };
           });
 
-          return () => unsubscribe();
+          setUserGroups(userGroupsData);
         }
       } catch (error) {
-        console.error('Error fetching groups:', error);
+        console.error('Error fetching user groups:', error);
       }
     };
 
-    fetchGroups();
+    fetchUserGroups();
   }, []);
 
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Groups</Text>
       <FlatList
-        data={createdGroups}
+        data={userGroups}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <TouchableOpacity
@@ -56,7 +49,7 @@ const GroupScreen = () => {
           >
             <View style={styles.listItem}>
               <Text style={styles.groupName}>{item.name}</Text>
-              <Icon name="comments" size={20} color="green" /> 
+              <Icon name="comments" size={20} color="green" />
             </View>
           </TouchableOpacity>
         )}
